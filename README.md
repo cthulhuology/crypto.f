@@ -9,5 +9,5 @@ This is an experimental binding for SwiftForth for OpenSSL 3.x and implementatio
 - jwk.f  - JWK functions
 - pki.f  - crypto functions for signing, verifying, encrypting, and decrypting messages
 
-
+This is very much a Work in Progress and should not be used for any purpose at all
 
