@@ -5,9 +5,61 @@ XLIBRARY ssl libssl.so
 
 PRIVATE
 
+\ BIO_callback_fn 	( b iop *argp argi argl ret -- i )
+\ BIO_callback_fn_ex	( b iop *argp len argi argl ret *ret -- i )
+
+FUNCTION: BIO_get_callback 	( b -- cb )		\ get cb function
+FUNCTION: BIO_set_callback	( b cb -- )		\ set cb function
+FUNCTION: BIO_get_callback_ex	( b -- cbex )		\ get cbex function
+FUNCTION: BIO_set_callback_ex	( b cbex -- )		\ set cbex function
+
+FUNCTION: BIO_get_callback_arg	( b -- a )		\ char* return
+FUNCTION: BIO_set_callback_arg  ( b a -- )		\ set char* 
+
+FUNCTION: BIO_method_name	( b -- a )		\ get the method name char*
+FUNCTION: BIO_method_type	( b -- t )		\ returns type flag
+
+
+
+\ base64 encoders
 FUNCTION: BIO_f_base64		( -- m )		\ method to base64 encode all data
 
+\ memory functions
 FUNCTION: BIO_s_mem 		( -- m ) 		\ returns memory allocation function 
+FUNCTION: BIO_s_secmem 		( -- m ) 		\ returns memory allocation function 
+FUNCTION: BIO_new_mem_buf	( a  i -- a )		\ bio from memory region
+
+\ socket functions
+FUNCTION: BIO_s_socket		( -- a )		\ listen socket
+FUNCTION: BIO_s_connect		( -- a ) 		\ remote socket
+FUNCTION: BIO_s_accept		( -- a )		\ client socket
+
+\ files
+FUNCTION: BIO_s_fd		( -- a )		\ socket file descriptor 
+FUNCTION: BIO_s_log		( -- a )		\ socket logger
+FUNCTION: BIO_s_bio		( -- a )		\ socket bio pipe
+FUNCTION: BIO_s_null		( -- a )		\ socket null
+FUNCTION: BIO_f_null		( -- a )		\ file null
+FUNCTION: BIO_f_buffer		( -- a )		\ buffer
+FUNCTION: BIO_f_linebuffer	( -- a )		\ line buffer
+FUNCTION: BIO_f_nbio_test	( -- a )		\ 
+
+\ datagram
+FUNCTION: BIO_s_datagram	( -- a )		\ datagram socket
+FUNCTION: BIO_dgram_non_fatal_error ( e -- i )		\ datagram error
+FUNCTION: BIO_new_dgram		( fd f -- a )		\ f is close flag
+
+\ sctp
+FUNCTION: BIO_s_datagram_sctp	( -- a ) 		\ sctp datagram
+FUNCTION: BIO_new_dgram_sctp	( fd f -- a )		\ f is close flag
+FUNCTION: BIO_dgram_is_sctp	( a -- i )		\ test if sctp
+FUNCTION: BIO_dgram_sctp_notification_cb	( a cb c --  i )	\ callback w/ context
+\ callback is a ( bio context buffer -- ) method
+FUNCTION: BIO_dgram_sctp_wait_for_dry ( a -- i )	\ 
+FUNCTION: BIO_dgram_sctp_msg_waiting  ( a -- i )	\ 
+
+
+
 
 FUNCTION: BIO_new		( a -- a )		\ returns a new bio using mehthod 
 FUNCTION: BIO_set		( a m -- i )		\ sets method on existing bio, 0 fail
@@ -24,16 +76,31 @@ FUNCTION: BIO_test_flags	( b f -- i )		\ test flags on a bio
 FUNCTION: BIO_clear_flags	( b f -- )		\ clears the flags on a bio
 
 FUNCTION: BIO_ctrl		( b i i a -- i )	\ do a bio command
+FUNCTION: BIO_int_ctrl		( b i i i -- i )	\ do a bio command with iarg 
+FUNCTION: BIO_ptr_ctrl		( b i i -- a )		\ do a bio command pointer ret
 
-
+FUNCTION: BIO_nread0		( b *a -- i )		\ 
+FUNCTION: BIO_nread		( b *a i -- i )		\ read bytes
+FUNCTION: BIO_nwrite0		( b *a -- i )		\ 
+FUNCTION: BIO_nwrite		( b *a i -- i )		\ write bytes
 
 PUBLIC
+
+\ BIO callback returns
+$01 CONSTANT BIO_CB_FREE
+$02 CONSTANT BIO_CB_READ
+$03 CONSTANT BIO_CB_WRITE
+$04 CONSTANT BIO_CB_PUTS
+$05 CONSTANT BIO_CB_GETS
+$06 CONSTANT BIO_CB_CTRL
+$80 CONSTANT BIO_CB_RETURN
 
 \ nearly all the bio calls got through BIO_ctrl 
 
 $0 CONSTANT BIO_NOCLOSE
 $1 CONSTANT BIO_CLOSE
 
+\ BIO_ctrl ops
 1  CONSTANT BIO_CTRL_RESET      	\ opt - rewind/zero etc 
 2  CONSTANT BIO_CTRL_EOF        	\ opt - are we at the eof 
 3  CONSTANT BIO_CTRL_INFO       	\ opt - extra tit-bits 
@@ -81,7 +148,18 @@ $1 CONSTANT BIO_CLOSE
 49 CONSTANT BIO_CTRL_DGRAM_GET_MTU_OVERHEAD
 
 50 CONSTANT BIO_CTRL_DGRAM_SCTP_SET_IN_HANDSHAKE
-\ TODO look at SCTP and determine if OPENSSL_NO_SCTP is requirement
+51 CONSTANT BIO_CTRL_DGRAM_SCTP_ADD_AUTH_KEY
+52 CONSTANT BIO_CTRL_DGRAM_SCTP_NEXT_AUTH_KEY
+53 CONSTANT BIO_CTRL_DGRAM_SCTP_AUTH_CCS_RCVD
+60 CONSTANT BIO_CTRL_DGRAM_SCTP_GET_SNDINFO
+61 CONSTANT BIO_CTRL_DGRAM_SCTP_SET_SNDINFO
+62 CONSTANT BIO_CTRL_DGRAM_SCTP_GET_RCVINFO
+63 CONSTANT BIO_CTRL_DGRAM_SCTP_SET_RCVINFO
+64 CONSTANT BIO_CTRL_DGRAM_SCTP_GET_PRINFO
+65 CONSTANT BIO_CTRL_DGRAM_SCTP_SET_PRINFO
+70 CONSTANT BIO_CTRL_DGRAM_SCTP_SAVE_SHUTDOWN
+
+71 CONSTANT BIO_CTRL_DGRAM_SET_PEEK_MODE
 
 \ fd consts
 $02 CONSTANT BIO_FP_READ
@@ -190,7 +268,14 @@ $800 CONSTANT BIO_FLAGS_IN_EOF
 : BIO_should_retry_type ( a -- i ) BIO_FLAGS_RWS BIO_test_flags ;
 : BIO_should_retry ( a -- i ) BIO_FLAGS_SHOULD_RETRY BIO_test_flags ;
 
+: BIO_get_mem_data ( b *a -- i ) BIO_CTRL_INFO swap 0 swap BIO_ctrl ;
+: BIO_set_mem_buf ( b a c -- i ) BIO_CTRL_SET_BUF_MEM swap rot BIO_ctrl ;
 : BIO_get_mem_ptr ( b *a -- i ) BIO_C_GET_BUF_MEM_PTR swap 0 swap BIO_ctrl ;
+: BIO_set_mem_eof_return ( b v -- i ) BIO_C_SET_BUF_MEM_EOF_RETURN swap 0 BIO_ctrl ;
+
+: BIO_get_buffer_num_lines ( b -- i ) BIO_C_GET_BUFF_NUM_LINES _BIO_op ;
+: BIO_set_buffer_size ( b i -- i ) BIO_C_SET_BUFF_SIZE swap 0 BIO_ctrl ;
+: BIO_set_read_buffer_size ( b i -- i ) 
 
 : /ssl openssl +order ;
 
