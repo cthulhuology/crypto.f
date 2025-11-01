@@ -19,8 +19,6 @@ FUNCTION: BIO_set_callback_arg  ( b a -- )		\ set char*
 FUNCTION: BIO_method_name	( b -- a )		\ get the method name char*
 FUNCTION: BIO_method_type	( b -- t )		\ returns type flag
 
-
-
 \ base64 encoders
 FUNCTION: BIO_f_base64		( -- m )		\ method to base64 encode all data
 
@@ -58,9 +56,7 @@ FUNCTION: BIO_dgram_sctp_notification_cb	( a cb c --  i )	\ callback w/ context
 FUNCTION: BIO_dgram_sctp_wait_for_dry ( a -- i )	\ 
 FUNCTION: BIO_dgram_sctp_msg_waiting  ( a -- i )	\ 
 
-
-
-
+\ bio functions
 FUNCTION: BIO_new		( a -- a )		\ returns a new bio using mehthod 
 FUNCTION: BIO_set		( a m -- i )		\ sets method on existing bio, 0 fail
 FUNCTION: BIO_free		( a -- i )		\ frees a bio 
