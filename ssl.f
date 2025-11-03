@@ -47,6 +47,7 @@ FUNCTION: BIO_s_datagram	( -- a )		\ datagram socket
 FUNCTION: BIO_dgram_non_fatal_error ( e -- i )		\ datagram error
 FUNCTION: BIO_new_dgram		( fd f -- a )		\ f is close flag
 
+[defined] USE_SCTP [if] 
 \ sctp
 FUNCTION: BIO_s_datagram_sctp	( -- a ) 		\ sctp datagram
 FUNCTION: BIO_new_dgram_sctp	( fd f -- a )		\ f is close flag
@@ -55,10 +56,10 @@ FUNCTION: BIO_dgram_sctp_notification_cb	( a cb c --  i )	\ callback w/ context
 \ callback is a ( bio context buffer -- ) method
 FUNCTION: BIO_dgram_sctp_wait_for_dry ( a -- i )	\ 
 FUNCTION: BIO_dgram_sctp_msg_waiting  ( a -- i )	\ 
+[then]
 
 \ bio functions
 FUNCTION: BIO_new		( a -- a )		\ returns a new bio using mehthod 
-FUNCTION: BIO_set		( a m -- i )		\ sets method on existing bio, 0 fail
 FUNCTION: BIO_free		( a -- i )		\ frees a bio 
 FUNCTION: BIO_vfree		( a -- )		\ ditto but no return
 FUNCTION: BIO_free_all		( a -- )		\ frees a full chain
@@ -265,15 +266,18 @@ $800 CONSTANT BIO_FLAGS_IN_EOF
 : BIO_should_retry ( a -- i ) BIO_FLAGS_SHOULD_RETRY BIO_test_flags ;
 
 : BIO_get_mem_data ( b *a -- i ) BIO_CTRL_INFO swap 0 swap BIO_ctrl ;
-: BIO_set_mem_buf ( b a c -- i ) BIO_CTRL_SET_BUF_MEM swap rot BIO_ctrl ;
+: BIO_set_mem_buf ( b a c -- i ) BIO_C_SET_BUF_MEM swap rot BIO_ctrl ;
 : BIO_get_mem_ptr ( b *a -- i ) BIO_C_GET_BUF_MEM_PTR swap 0 swap BIO_ctrl ;
 : BIO_set_mem_eof_return ( b v -- i ) BIO_C_SET_BUF_MEM_EOF_RETURN swap 0 BIO_ctrl ;
 
 : BIO_get_buffer_num_lines ( b -- i ) BIO_C_GET_BUFF_NUM_LINES _BIO_op ;
 : BIO_set_buffer_size ( b i -- i ) BIO_C_SET_BUFF_SIZE swap 0 BIO_ctrl ;
-: BIO_set_read_buffer_size ( b i -- i ) 
+: BIO_set_read_buffer_size ( b i -- i ) BIO_C_SET_BUFF_SIZE swap 0 BIO_int_ctrl ;
+: BIO_set_write_buffer_size ( b i -- i ) BIO_C_SET_BUFF_SIZE swap 1 BIO_int_ctrl ;
+: BIO_set_buffer_read_data ( b a i -- i ) BIO_C_SET_BUFF_READ_DATA swap rot BIO_ctrl ;
 
-: /ssl openssl +order ;
+
+: /ssl ssl +order ;
 
 END-PACKAGE
 
